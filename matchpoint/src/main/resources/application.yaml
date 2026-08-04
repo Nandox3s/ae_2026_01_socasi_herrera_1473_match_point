@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: matchpoint
+
+  # Base de datos PROPIA del microservicio (database-per-service).
+  # Nunca apunta a la base de users: todo dato ajeno se pide por HTTP.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/matchpoint_db}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:matchpoint_app}
+    password: ${DB_PASSWORD:matchpoint_local_pw}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    # Deja que Hibernate cree el esquema ANTES de que corra data.sql (datos de prueba).
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+
+  sql:
+    init:
+      mode: always
+
+  # Resource Server: MISMO issuer que users, tomado de variable de entorno.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_JDqEph0S3}
+
+server:
+  port: ${SERVER_PORT:8787}
+  servlet:
+    # Los controladores estan mapeados en /courts, /tournaments... y el micro entero
+    # cuelga de /matchpoint. Asi nginx enruta /matchpoint sin reescribir nada.
+    context-path: ${SERVER_CONTEXT_PATH:/matchpoint}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+# Comunicacion sincrona con el otro microservicio, por nombre de servicio de Compose.
+services:
+  users:
+    base-url: ${USERS_SERVICE_URL:http://localhost:8686}
+    timeout-millis: ${USERS_SERVICE_TIMEOUT_MS:3000}
+
+logging:
+  # Estandar de logging del Criterio 2: una sola linea, campos separados por " | ",
+  # en orden fijo. timestamp y LEVEL los pone el framework; el sub sale del MDC.
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} | %-5level | ${spring.application.name} | sub=%X{sub:-anonimo} | %logger{40} | %msg%n"
+  level:
+    # Capa de aplicacion del logging de base de datos: SQL + parametros.
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    com.pucetec.matchpoint: DEBUG

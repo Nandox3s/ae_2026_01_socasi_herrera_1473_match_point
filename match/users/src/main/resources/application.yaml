@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: users
+
+  # Base de datos PROPIA del microservicio (database-per-service).
+  # Nunca apunta a la base de matchpoint: todo dato ajeno se pide por HTTP.
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/users_db}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USERNAME:users_app}
+    password: ${DB_PASSWORD:users_local_pw}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    # Deja que Hibernate cree el esquema ANTES de que corra data.sql (datos de prueba).
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+        generate_statistics: true
+
+  sql:
+    init:
+      mode: always
+
+  # Resource Server: valida el JWT que emite Cognito.
+  # El issuer-uri apunta al User Pool; Spring descarga las llaves publicas (JWKS)
+  # desde ese issuer y verifica firma, expiracion e issuer de cada token.
+  # Tiene que ser EXACTAMENTE el mismo que resuelve matchpoint.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${COGNITO_ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_JDqEph0S3}
+
+server:
+  port: ${SERVER_PORT:8686}
+  # Las rutas ya nacen bajo /users en el propio controlador, asi que no hace falta
+  # context-path: nginx enruta /users tal cual.
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  # Estandar de logging del Criterio 2: una sola linea, campos separados por " | ",
+  # en orden fijo. timestamp y LEVEL los pone el framework; el sub sale del MDC.
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} | %-5level | ${spring.application.name} | sub=%X{sub:-anonimo} | %logger{40} | %msg%n"
+  level:
+    # Capa de aplicacion del logging de base de datos: SQL + parametros.
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+    com.pucetec.users: DEBUG

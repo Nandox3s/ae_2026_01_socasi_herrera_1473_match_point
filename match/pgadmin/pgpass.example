@@ -1,0 +1,5 @@
+# hostname:port:database:username:password
+# Copia este archivo a pgadmin/pgpass y pon las MISMAS claves que pusiste en .env.
+# pgadmin/pgpass esta en .gitignore.
+users-db:5432:users_db:users_app:cambia-esta-clave
+matchpoint-db:5432:matchpoint_db:matchpoint_app:cambia-esta-clave

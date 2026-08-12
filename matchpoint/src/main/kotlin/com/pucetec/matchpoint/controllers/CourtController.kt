@@ -23,7 +23,6 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/courts")
 class CourtController(private val courtService: CourtService) {
-
     @GetMapping
     fun list(
         @RequestParam(required = false) sector: String?,

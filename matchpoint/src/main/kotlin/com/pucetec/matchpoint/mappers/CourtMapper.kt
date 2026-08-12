@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class CourtMapper {
-
     fun toEntity(request: CreateCourtRequest, managerUser: String): Court =
         Court(
             name = request.name,

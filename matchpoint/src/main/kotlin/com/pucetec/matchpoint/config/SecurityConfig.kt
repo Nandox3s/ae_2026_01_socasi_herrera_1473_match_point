@@ -15,14 +15,12 @@ import org.springframework.security.web.SecurityFilterChain
 @Configuration
 @EnableWebSecurity
 class SecurityConfig {
-
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .csrf { it.disable() }
             .authorizeHttpRequests { auth ->
 
-                // Sonda de salud para el healthcheck de docker compose.
                 auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
 
                 auth.requestMatchers(HttpMethod.GET, "/courts", "/courts/*").permitAll()
@@ -64,7 +62,7 @@ class SecurityConfig {
                 it.authenticationEntryPoint(LoggingAuthenticationEntryPoint())
                 it.accessDeniedHandler(LoggingAccessDeniedHandler())
             }
-            // Traza de entrada/salida de cada peticion, ya con el sub del token disponible.
+
             .addFilterAfter(ApiLoggingFilter(), BearerTokenAuthenticationFilter::class.java)
 
         return http.build()

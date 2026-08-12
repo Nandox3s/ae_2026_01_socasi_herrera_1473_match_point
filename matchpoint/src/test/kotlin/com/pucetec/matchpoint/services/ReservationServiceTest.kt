@@ -34,7 +34,6 @@ import java.time.LocalDateTime
 import java.util.Optional
 
 class ReservationServiceTest {
-
     private lateinit var reservationRepository: ReservationRepository
     private lateinit var courtRepository: CourtRepository
     private lateinit var usersClient: UsersClient
@@ -96,8 +95,6 @@ class ReservationServiceTest {
     private fun request(minutes: Int = 60, courtId: Long = 1L) =
         CreateReservationRequest(courtId, startsAt, minutes)
 
-    // ------------------------------------------------------------------------ create
-
     @Test
     fun `createReservation asks the users microservice for the profile and stores its name`() {
         whenever(courtRepository.findById(1L)).thenReturn(Optional.of(court()))
@@ -153,8 +150,6 @@ class ReservationServiceTest {
         assertThrows<CourtNotAvailableException> { service.createReservation(request(), player) }
     }
 
-    // --------------------------------------------------------------------- lecturas
-
     @Test
     fun `listMine only returns the reservations of the caller`() {
         whenever(reservationRepository.findByOwnerUserOrderByStartsAtDesc(player))
@@ -183,8 +178,6 @@ class ReservationServiceTest {
 
         assertThrows<NotYourReservationException> { service.getMine(1L, player) }
     }
-
-    // ---------------------------------------------------------------------- cancelar
 
     @Test
     fun `cancel switches the status to CANCELLED`() {

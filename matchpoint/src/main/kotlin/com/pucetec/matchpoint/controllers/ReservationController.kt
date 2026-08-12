@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/reservations")
 class ReservationController(private val reservationService: ReservationService) {
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(

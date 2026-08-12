@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class TeamMapper {
-
     fun toEntity(request: RegisterTeamRequest, tournament: Tournament, registeredByUser: String): Team =
         Team(
             tournament = tournament,

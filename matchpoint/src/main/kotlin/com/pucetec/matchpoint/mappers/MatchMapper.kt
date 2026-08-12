@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class MatchMapper {
-
     fun toResponse(match: Match): MatchResponse =
         MatchResponse(
             id = match.id,

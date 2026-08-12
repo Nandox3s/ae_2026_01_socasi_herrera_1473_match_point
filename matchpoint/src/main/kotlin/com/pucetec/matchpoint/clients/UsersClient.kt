@@ -13,27 +13,15 @@ import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
 
-/**
- * Comunicacion SINCRONA con el otro microservicio (Criterio 1).
- *
- *  - La URL base sale de una variable de entorno y apunta al NOMBRE DE SERVICIO de
- *    Compose (`http://users:8686`), nunca a localhost ni a una IP.
- *  - La identidad viaja en el propio token: se reenvia la cabecera `Authorization` del
- *    usuario que hizo la peticion, asi que `users` aplica sus mismas reglas.
- *  - Si `users` esta caido devolvemos 503 y el sistema se recupera solo; por eso en el
- *    compose la dependencia entre microservicios es `service_started`, no `service_healthy`.
- */
 @Component
 class UsersClient(
     builder: RestClient.Builder,
     @Value("\${services.users.base-url}") baseUrl: String
 ) {
-
     private val logger = LoggerFactory.getLogger(UsersClient::class.java)
 
     private val restClient: RestClient = builder.baseUrl(baseUrl).build()
 
-    /** Perfil del usuario que hizo la peticion. Lanza si no existe o si `users` no responde. */
     fun fetchCurrentProfile(): UserProfile {
         val token = currentTokenValue()
             ?: throw UsersServiceUnavailableException("No bearer token available to call the users microservice")
@@ -82,7 +70,6 @@ class UsersClient(
         return profile
     }
 
-    /** Igual que [fetchCurrentProfile] pero devuelve null en vez de fallar. Para `/me`. */
     fun fetchCurrentProfileOrNull(): UserProfile? = try {
         fetchCurrentProfile()
     } catch (exception: RuntimeException) {

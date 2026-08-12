@@ -31,7 +31,6 @@ import java.time.LocalDateTime
 import java.util.Optional
 
 class CourtServiceTest {
-
     private lateinit var courtRepository: CourtRepository
     private lateinit var reservationRepository: ReservationRepository
     private lateinit var auditService: AuditService
@@ -80,8 +79,6 @@ class CourtServiceTest {
         price: BigDecimal = BigDecimal("12.50")
     ) = CreateCourtRequest(name, sector, true, SportType.BASKET, floorType, price)
 
-    // ------------------------------------------------------------------------ create
-
     @Test
     fun `createCourt stores the court and takes the owner from the token`() {
         whenever(courtRepository.save(any<Court>())).thenAnswer { it.arguments[0] as Court }
@@ -115,8 +112,6 @@ class CourtServiceTest {
             service.createCourt(createRequest(price = BigDecimal.ZERO), manager)
         }
     }
-
-    // -------------------------------------------------------------------- list & get
 
     @Test
     fun `listCourts without filters returns everything`() {
@@ -156,8 +151,6 @@ class CourtServiceTest {
         assertThrows<CourtNotFoundException> { service.getCourt(9L) }
     }
 
-    // -------------------------------------------------------------------- disponibles
-
     @Test
     fun `availableCourts without a time slot returns every active court`() {
         whenever(courtRepository.findByActiveTrue()).thenReturn(listOf(court()))
@@ -193,8 +186,6 @@ class CourtServiceTest {
 
         assertEquals(1, free.size)
     }
-
-    // ------------------------------------------------------------------------ update
 
     @Test
     fun `updateCourt changes the price and the active flag`() {

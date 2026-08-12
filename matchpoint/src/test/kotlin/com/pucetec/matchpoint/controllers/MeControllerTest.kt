@@ -18,7 +18,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @WebMvcTest(MeController::class)
 @Import(SecurityConfig::class)
 class MeControllerTest {
-
     @Autowired
     lateinit var mockMvc: MockMvc
 

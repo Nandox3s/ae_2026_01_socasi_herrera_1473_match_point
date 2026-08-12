@@ -39,7 +39,6 @@ import java.time.LocalDateTime
 @WebMvcTest(TournamentController::class, TeamController::class, MatchController::class)
 @Import(SecurityConfig::class, GlobalExceptionHandler::class)
 class TournamentControllerTest {
-
     @Autowired
     lateinit var mockMvc: MockMvc
 
@@ -83,8 +82,6 @@ class TournamentControllerTest {
         rounds = listOf(RoundResponse(1, "Final", listOf(sampleMatch()))),
         champion = null
     )
-
-    // ------------------------------------------------------------------- tournaments
 
     @Test
     fun `GET tournaments is public`() {
@@ -140,8 +137,6 @@ class TournamentControllerTest {
         mockMvc.perform(post("/tournaments/1/start").with(player())).andExpect(status().isForbidden)
     }
 
-    // ------------------------------------------------------------------------- teams
-
     @Test
     fun `GET teams is public`() {
         whenever(tournamentService.listTeams(1L)).thenReturn(listOf(sampleTeam()))
@@ -187,8 +182,6 @@ class TournamentControllerTest {
 
         verify(tournamentService).withdrawTeam(1L, 1L, "player_fernando")
     }
-
-    // ----------------------------------------------------------------------- matches
 
     @Test
     fun `GET the bracket is public`() {
@@ -241,8 +234,6 @@ class TournamentControllerTest {
                 .content("""{"homeScore":30,"awayScore":24}""")
         ).andExpect(status().isForbidden)
     }
-
-    // ---------------------------------------------- traduccion de errores a HTTP ----
 
     @Test
     fun `a missing tournament is answered with 404`() {

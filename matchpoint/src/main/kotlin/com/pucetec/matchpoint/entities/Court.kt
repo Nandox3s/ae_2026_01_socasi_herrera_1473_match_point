@@ -15,7 +15,6 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "courts")
 class Court(
-
     val name: String,
 
     val sector: String,

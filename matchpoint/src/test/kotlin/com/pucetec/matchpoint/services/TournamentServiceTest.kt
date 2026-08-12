@@ -55,7 +55,6 @@ import java.time.LocalDateTime
 import java.util.Optional
 
 class TournamentServiceTest {
-
     private lateinit var tournamentRepository: TournamentRepository
     private lateinit var teamRepository: TeamRepository
     private lateinit var matchRepository: MatchRepository
@@ -84,8 +83,6 @@ class TournamentServiceTest {
             auditService
         )
     }
-
-    // ----------------------------------------------------------------------- helpers
 
     private fun court(id: Long = 1L, managerUser: String = manager) = Court(
         name = "North Court 1",
@@ -126,8 +123,6 @@ class TournamentServiceTest {
         contactEmail: String = "falcons@puce.edu.ec",
         contactPhone: String = "0999555666"
     ) = RegisterTeamRequest(name, contactName, contactEmail, contactPhone)
-
-    // ------------------------------------------------------------- crear torneo -----
 
     @Test
     fun `createTournament stores the tournament without a venue`() {
@@ -205,8 +200,6 @@ class TournamentServiceTest {
         }
     }
 
-    // ------------------------------------------------------------------ listar y ver
-
     @Test
     fun `listTournaments counts the registered teams of each one`() {
         whenever(tournamentRepository.findAll()).thenReturn(listOf(tournament(), tournament(id = 2L)))
@@ -262,8 +255,6 @@ class TournamentServiceTest {
 
         assertEquals("Comets", service.getProgress(1L).champion?.name)
     }
-
-    // -------------------------------------------------------------- inscribir equipo
 
     @Test
     fun `registerTeam stores the team and takes the owner from the token`() {
@@ -355,8 +346,6 @@ class TournamentServiceTest {
         assertThrows<TeamNotFoundException> { service.getTeam(1L, 1L) }
     }
 
-    // ----------------------------------------------------------------- retirar equipo
-
     @Test
     fun `withdrawTeam removes an own team while registration is open`() {
         val cup = tournament()
@@ -388,8 +377,6 @@ class TournamentServiceTest {
         assertThrows<NotYourTeamException> { service.withdrawTeam(1L, 1L, player) }
     }
 
-    // ---------------------------------------------------------------- arrancar cuadro
-
     @Test
     fun `startTournament builds the whole bracket`() {
         val cup = tournament(maxTeams = 4)
@@ -407,7 +394,7 @@ class TournamentServiceTest {
         val progress = service.startTournament(1L, manager)
 
         assertEquals(TournamentStatus.IN_PROGRESS, progress.tournament.status)
-        // 4 equipos -> 2 semifinales + 1 final
+
         verify(matchRepository).saveAll(argThatHasSize(3))
         assertEquals(1, teams[0].internalStats.currentRound)
     }
@@ -439,8 +426,6 @@ class TournamentServiceTest {
 
         assertThrows<TournamentNotReadyException> { service.startTournament(1L, manager) }
     }
-
-    // ------------------------------------------------------------------------ matches
 
     @Test
     fun `listMatches returns the bracket`() {
@@ -504,8 +489,6 @@ class TournamentServiceTest {
             service.scheduleMatch(1L, ScheduleMatchRequest(LocalDateTime.now()), manager)
         }
     }
-
-    // ------------------------------------------------------------------- marcadores
 
     private fun readyMatch(
         cup: Tournament,

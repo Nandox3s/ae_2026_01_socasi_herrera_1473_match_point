@@ -24,7 +24,6 @@ import org.mockito.kotlin.whenever
 import java.util.Optional
 
 class UserServiceTest {
-
     private lateinit var userRepository: UserRepository
     private lateinit var auditService: AuditService
     private lateinit var service: UserService

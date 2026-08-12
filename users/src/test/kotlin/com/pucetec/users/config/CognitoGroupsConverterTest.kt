@@ -6,11 +6,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.security.oauth2.jwt.Jwt
 import java.time.Instant
 
-/**
- * La regla que decide el rol de cada usuario a partir del token de Cognito.
- */
 class CognitoGroupsConverterTest {
-
     private val converter = CognitoGroupsConverter()
 
     private fun tokenWithGroups(groups: List<String>?): Jwt {

@@ -10,14 +10,9 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
-/**
- * Auditoria de las entidades principales (Criterio 2, punto e2): quien, que, cuando y
- * valores anteriores/nuevos. Vive en la base del propio microservicio.
- */
 @Entity
 @Table(name = "audit_log")
 class AuditLog(
-
     @Column(name = "entity_name", nullable = false)
     val entityName: String,
 

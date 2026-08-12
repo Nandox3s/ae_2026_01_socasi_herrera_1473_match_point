@@ -11,7 +11,6 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.access.AccessDeniedHandler
 
 class LoggingSecurityHandlersTest {
-
     private class RecordingEntryPoint : AuthenticationEntryPoint {
         var called = false
         override fun commence(

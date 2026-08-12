@@ -7,9 +7,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @SpringBootTest
 class UsersApplicationTests {
-
-    // Reemplazamos el JwtDecoder real por un mock. Asi el contexto levanta
-    // sin salir a la red a descargar las llaves publicas de Cognito.
     @MockitoBean
     private lateinit var jwtDecoder: JwtDecoder
 

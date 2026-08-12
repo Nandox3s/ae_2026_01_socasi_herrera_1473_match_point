@@ -9,16 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.filter.OncePerRequestFilter
 
-/**
- * "Toda peticion deja rastro" (Criterio 2, punto d).
- *
- * Se instala UNA sola vez dentro de la cadena de Spring Security, justo despues del
- * filtro que valida el Bearer token: asi el `sub` de Cognito ya esta disponible para la
- * linea de entrada, y las peticiones que terminan en 401 (sin token) o 403 (rol
- * equivocado) tambien pasan por aqui y quedan registradas.
- */
 class ApiLoggingFilter : OncePerRequestFilter() {
-
     private val log = LoggerFactory.getLogger(ApiLoggingFilter::class.java)
 
     override fun doFilterInternal(
@@ -51,7 +42,6 @@ class ApiLoggingFilter : OncePerRequestFilter() {
     }
 
     companion object {
-        /** Marca que la peticion ya dejo su par de lineas, para no duplicarlas. */
         const val TRACED_ATTRIBUTE = "com.pucetec.users.logging.traced"
     }
 }

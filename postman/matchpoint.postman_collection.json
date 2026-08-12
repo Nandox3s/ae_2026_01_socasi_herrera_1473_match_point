@@ -3,15 +3,37 @@
     "name": "MatchPoint - Entrega final (users + matchpoint via nginx)",
     "_postman_id": "matchpoint-entrega-final",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Coleccion de la entrega final de Arquitectura Empresarial.\n\nTODO apunta a nginx ({{baseUrl}} = http://localhost:9090), nunca a los puertos internos.\n\nComo correrla:\n1. Importa tambien matchpoint.postman_environment.json y selecciona ese environment.\n2. Rellena cognitoClientId, managerPassword y playerPassword (no se versionan valores reales).\n3. Collection Runner de arriba a abajo: la carpeta 0 guarda los tokens y el resto usa las variables.\n\nCubre casos felices, de error (400/404/409) y de autorizacion (401/403) de los DOS microservicios, y termina limpiando para poder volver a ejecutarla."
+    "description": "Coleccion de la entrega final de Arquitectura Empresarial.\n\nTODO apunta a nginx ({{baseUrl}} = http://localhost:9090), nunca a los puertos internos.\n\nComo correrla:\n1. Importa tambien matchpoint.postman_environment.json y selecciona ese environment.\n2. Rellena cognitoClientSecret, managerPassword y playerPassword (no se versionan valores reales). El cognitoClientId ya viene puesto: es el App Client 'matchpoint-client' del User Pool.\n3. Collection Runner de arriba a abajo: la carpeta 0 guarda los tokens y el resto usa las variables.\n\nCubre casos felices, de error (400/404/409) y de autorizacion (401/403) de los DOS microservicios, y termina limpiando para poder volver a ejecutarla."
   },
   "item": [
     {
       "name": "0. Cognito - obtener los tokens",
-      "description": "Login de los dos roles. Todo lo demas usa {{managerToken}} y {{playerToken}}, que se guardan aqui automaticamente.",
+      "description": "Login de los dos roles contra el App Client que YA existia en el User Pool: 'matchpoint-client'.\n\nEse cliente tiene client secret y NO tiene habilitado USER_PASSWORD_AUTH; lo que tiene habilitado es el inicio de sesion basado en opciones (USER_AUTH). Por eso cada rol necesita DOS llamadas:\n\n  1) InitiateAuth con AuthFlow=USER_AUTH y PREFERRED_CHALLENGE=PASSWORD -> Cognito responde ChallengeName=PASSWORD + Session.\n  2) RespondToAuthChallenge con esa Session y la clave -> Cognito devuelve el access_token.\n\nComo el cliente tiene secret, las dos llamadas van firmadas con SECRET_HASH = Base64(HMAC-SHA256(username + clientId, clientSecret)). Lo calcula el pre-request script de esta carpeta; el secreto vive solo en el environment, nunca en la coleccion.\n\nTodo lo demas usa {{managerToken}} y {{playerToken}}, que se guardan aqui automaticamente.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const clientId = pm.environment.get('cognitoClientId');",
+              "const clientSecret = pm.environment.get('cognitoClientSecret');",
+              "",
+              "if (!clientId || !clientSecret || String(clientSecret).startsWith('PON_AQUI')) {",
+              "    throw new Error('Falta cognitoClientId o cognitoClientSecret en el environment. Copialos del App Client matchpoint-client (Cognito > Clientes de aplicacion > Secretos del cliente).');",
+              "}",
+              "",
+              "const secretHash = (username) =>",
+              "    CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA256(username + clientId, clientSecret));",
+              "",
+              "pm.environment.set('managerSecretHash', secretHash(pm.environment.get('managerUsername')));",
+              "pm.environment.set('playerSecretHash', secretHash(pm.environment.get('playerUsername')));"
+            ]
+          }
+        }
+      ],
       "item": [
         {
-          "name": "POST InitiateAuth (MANAGER) -> guarda managerToken",
+          "name": "1) POST InitiateAuth USER_AUTH (MANAGER) -> guarda managerSession",
           "event": [
             {
               "listen": "test",
@@ -19,9 +41,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const result = pm.response.json().AuthenticationResult;",
-                  "pm.test('Cognito devolvio un access_token', () => pm.expect(result.AccessToken).to.be.a('string').and.not.empty);",
-                  "pm.environment.set('managerToken', result.AccessToken);"
+                  "const body = pm.response.json();",
+                  "pm.test('Cognito eligio el reto PASSWORD', () => pm.expect(body.ChallengeName).to.eql('PASSWORD'));",
+                  "pm.environment.set('managerSession', body.Session || '');"
                 ]
               }
             }
@@ -40,14 +62,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognitoClientId}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{managerUsername}}\",\n    \"PASSWORD\": \"{{managerPassword}}\"\n  }\n}"
+              "raw": "{\n  \"AuthFlow\": \"USER_AUTH\",\n  \"ClientId\": \"{{cognitoClientId}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{managerUsername}}\",\n    \"PREFERRED_CHALLENGE\": \"PASSWORD\",\n    \"SECRET_HASH\": \"{{managerSecretHash}}\"\n  }\n}"
             },
             "url": "https://cognito-idp.{{cognitoRegion}}.amazonaws.com/",
-            "description": "Flujo USER_PASSWORD_AUTH del App Client de Cognito. El access_token se guarda solo en la variable de entorno."
+            "description": "Paso 1 del inicio de sesion basado en opciones (USER_AUTH). No se manda la clave todavia: solo se le dice a Cognito que el factor preferido es la contrasena. Devuelve ChallengeName=PASSWORD y una Session de un solo uso."
           }
         },
         {
-          "name": "POST InitiateAuth (PLAYER) -> guarda playerToken",
+          "name": "2) POST RespondToAuthChallenge PASSWORD (MANAGER) -> guarda managerToken",
           "event": [
             {
               "listen": "test",
@@ -55,9 +77,48 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const result = pm.response.json().AuthenticationResult;",
+                  "const body = pm.response.json();",
+                  "pm.test('Cognito no pidio otro reto', () =>",
+                  "    pm.expect(body.ChallengeName, 'reto pendiente: ' + body.ChallengeName + ' (usuario sin confirmar o con clave temporal)').to.be.undefined);",
+                  "const result = body.AuthenticationResult || {};",
                   "pm.test('Cognito devolvio un access_token', () => pm.expect(result.AccessToken).to.be.a('string').and.not.empty);",
-                  "pm.environment.set('playerToken', result.AccessToken);"
+                  "pm.environment.set('managerToken', result.AccessToken || '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-amz-json-1.1"
+              },
+              {
+                "key": "X-Amz-Target",
+                "value": "AWSCognitoIdentityProviderService.RespondToAuthChallenge"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ChallengeName\": \"PASSWORD\",\n  \"ClientId\": \"{{cognitoClientId}}\",\n  \"Session\": \"{{managerSession}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{managerUsername}}\",\n    \"PASSWORD\": \"{{managerPassword}}\",\n    \"SECRET_HASH\": \"{{managerSecretHash}}\"\n  }\n}"
+            },
+            "url": "https://cognito-idp.{{cognitoRegion}}.amazonaws.com/",
+            "description": "Paso 2: se responde el reto PASSWORD con la Session del paso anterior. El access_token se guarda solo en la variable de entorno; nunca queda escrito en la coleccion."
+          }
+        },
+        {
+          "name": "1) POST InitiateAuth USER_AUTH (PLAYER) -> guarda playerSession",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Cognito eligio el reto PASSWORD', () => pm.expect(body.ChallengeName).to.eql('PASSWORD'));",
+                  "pm.environment.set('playerSession', body.Session || '');"
                 ]
               }
             }
@@ -76,10 +137,49 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognitoClientId}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{playerUsername}}\",\n    \"PASSWORD\": \"{{playerPassword}}\"\n  }\n}"
+              "raw": "{\n  \"AuthFlow\": \"USER_AUTH\",\n  \"ClientId\": \"{{cognitoClientId}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{playerUsername}}\",\n    \"PREFERRED_CHALLENGE\": \"PASSWORD\",\n    \"SECRET_HASH\": \"{{playerSecretHash}}\"\n  }\n}"
             },
             "url": "https://cognito-idp.{{cognitoRegion}}.amazonaws.com/",
-            "description": "Flujo USER_PASSWORD_AUTH del App Client de Cognito. El access_token se guarda solo en la variable de entorno."
+            "description": "Mismo flujo USER_AUTH del MANAGER, con el usuario del rol PLAYER."
+          }
+        },
+        {
+          "name": "2) POST RespondToAuthChallenge PASSWORD (PLAYER) -> guarda playerToken",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Cognito no pidio otro reto', () =>",
+                  "    pm.expect(body.ChallengeName, 'reto pendiente: ' + body.ChallengeName + ' (usuario sin confirmar o con clave temporal)').to.be.undefined);",
+                  "const result = body.AuthenticationResult || {};",
+                  "pm.test('Cognito devolvio un access_token', () => pm.expect(result.AccessToken).to.be.a('string').and.not.empty);",
+                  "pm.environment.set('playerToken', result.AccessToken || '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-amz-json-1.1"
+              },
+              {
+                "key": "X-Amz-Target",
+                "value": "AWSCognitoIdentityProviderService.RespondToAuthChallenge"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ChallengeName\": \"PASSWORD\",\n  \"ClientId\": \"{{cognitoClientId}}\",\n  \"Session\": \"{{playerSession}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{playerUsername}}\",\n    \"PASSWORD\": \"{{playerPassword}}\",\n    \"SECRET_HASH\": \"{{playerSecretHash}}\"\n  }\n}"
+            },
+            "url": "https://cognito-idp.{{cognitoRegion}}.amazonaws.com/",
+            "description": "Paso 2 del rol PLAYER. Guarda {{playerToken}}."
           }
         }
       ]

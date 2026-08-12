@@ -17,7 +17,6 @@ import org.springframework.security.oauth2.jwt.Jwt
 import java.time.Instant
 
 class AuditServiceTest {
-
     private lateinit var repository: AuditLogRepository
     private lateinit var service: AuditService
 

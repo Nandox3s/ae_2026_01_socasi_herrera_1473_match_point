@@ -5,11 +5,8 @@ import com.pucetec.users.dto.UserResponse
 import com.pucetec.users.entities.User
 import org.springframework.stereotype.Component
 
-// El cognitoId y el username se pasan aparte porque no viajan en el request:
-// salen del token ya validado.
 @Component
 class UserMapper {
-
     fun toEntity(request: UserRequest, cognitoId: String, username: String): User =
         User(
             cognitoId = cognitoId,

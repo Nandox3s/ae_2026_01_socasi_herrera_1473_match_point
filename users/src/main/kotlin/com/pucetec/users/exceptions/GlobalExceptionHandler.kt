@@ -7,13 +7,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
-/**
- * Un solo lugar traduce excepcion -> codigo HTTP y deja el evento de negocio en el log.
- * Los mensajes de la API van en ingles, igual que los del log.
- */
 @RestControllerAdvice
 class GlobalExceptionHandler {
-
     private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(BlankNameException::class)

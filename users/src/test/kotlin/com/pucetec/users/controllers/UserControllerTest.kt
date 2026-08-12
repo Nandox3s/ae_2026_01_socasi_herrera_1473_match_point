@@ -31,7 +31,6 @@ import java.time.LocalDateTime
 @WebMvcTest(UserController::class)
 @Import(SecurityConfig::class, GlobalExceptionHandler::class)
 class UserControllerTest {
-
     @Autowired
     lateinit var mockMvc: MockMvc
 
@@ -48,7 +47,6 @@ class UserControllerTest {
         .authorities(SimpleGrantedAuthority("ROLE_PLAYER"))
         .jwt { it.subject(sub).claim("username", "player_fernando") }
 
-    /** Token sin el claim `username`: el controlador cae al `sub`. */
     private fun playerWithoutUsername() = jwt()
         .authorities(SimpleGrantedAuthority("ROLE_PLAYER"))
         .jwt { it.subject(sub) }
@@ -64,8 +62,6 @@ class UserControllerTest {
     )
 
     private val body = """{"name":"Fernando Socasi","email":"fernando.socasi@puce.edu.ec","phone":"0999555666"}"""
-
-    // ------------------------------------------------------------------ perfil propio
 
     @Test
     fun `POST users me without a token returns 401`() {
@@ -113,8 +109,6 @@ class UserControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.name").value("Fernando Socasi"))
     }
-
-    // ---------------------------------------------------------- endpoints de MANAGER
 
     @Test
     fun `GET users with MANAGER returns the whole list`() {
@@ -168,8 +162,6 @@ class UserControllerTest {
         mockMvc.perform(get("/users/cognito/otro-sub").with(player()))
             .andExpect(status().isOk)
     }
-
-    // -------------------------------------------------- traduccion de errores a HTTP
 
     @Test
     fun `a missing profile is answered with 404`() {

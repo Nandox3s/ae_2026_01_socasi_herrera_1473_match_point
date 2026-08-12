@@ -16,25 +16,19 @@ import com.pucetec.users.repositories.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
-// es el que almacena la logica del negocio
 @Service
 class UserService(
     private val userRepository: UserRepository,
     private val userMapper: UserMapper,
     private val auditService: AuditService
 ) {
-
     private val logger = LoggerFactory.getLogger(UserService::class.java)
 
-    // Registra el perfil de un usuario y lo asocia a su cognitoId.
-    // El cognitoId y el username salen del token, no del body.
     fun createUser(cognitoId: String, username: String, request: UserRequest): UserResponse {
         if (request.name.isBlank()) {
             throw BlankNameException("Name cannot be blank")
         }
 
-        // La relacion cognitoId -> perfil es 1 a 1: no puede haber dos perfiles
-        // para el mismo usuario de Cognito.
         if (userRepository.existsByCognitoId(cognitoId)) {
             throw DuplicateCognitoIdException("Profile already exists for this Cognito user")
         }
@@ -66,7 +60,6 @@ class UserService(
         return userMapper.toResponse(user)
     }
 
-    // El corazon del micro: dado un cognitoId, devuelve los datos propios asociados.
     fun getUserByCognitoId(cognitoId: String): UserResponse {
         val user = findByCognitoIdOrThrow(cognitoId)
         return userMapper.toResponse(user)
@@ -117,8 +110,6 @@ class UserService(
             UserNotFoundException("There is no profile for this Cognito user")
         }
 
-    // Los valores anteriores/nuevos de la auditoria van enmascarados: nada de
-    // correos ni telefonos completos guardados en claro.
     private fun describe(user: User): String =
         "username=${user.username} name=${user.name} " +
             "email=${maskEmail(user.email)} phone=${maskPhone(user.phone)}"

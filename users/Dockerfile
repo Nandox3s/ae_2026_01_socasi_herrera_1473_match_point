@@ -13,7 +13,6 @@ RUN ./gradlew --no-daemon bootJar -x test
 
 FROM eclipse-temurin:21-jre AS runtime
 
-# curl lo usa el healthcheck de docker compose contra /actuator/health.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*

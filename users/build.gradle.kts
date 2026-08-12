@@ -24,12 +24,11 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	// Seguridad: valida el JWT emitido por Cognito (resource server)
+
 	implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("tools.jackson.module:jackson-module-kotlin")
 
-	// La base de datos es PostgreSQL, una por microservicio. Nada de H2 en produccion.
 	runtimeOnly("org.postgresql:postgresql")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -39,10 +38,8 @@ dependencies {
 	testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-	// Para fabricar JWTs falsos con jwt() en los tests, sin depender de AWS.
 	testImplementation("org.springframework.security:spring-security-test")
 
-	// Base en memoria SOLO para los tests de integracion con JPA (nunca en runtime).
 	testRuntimeOnly("com.h2database:h2")
 }
 
@@ -63,8 +60,6 @@ tasks.withType<Test> {
 	finalizedBy(tasks.jacocoTestReport)
 }
 
-// Lo que la rubrica permite dejar fuera de la cuenta de cobertura: clases de
-// configuracion, DTOs sin logica, entidades sin comportamiento y la clase Application.
 val coverageExclusions = listOf(
 	"com/pucetec/users/UsersApplication*",
 	"com/pucetec/users/config/**",

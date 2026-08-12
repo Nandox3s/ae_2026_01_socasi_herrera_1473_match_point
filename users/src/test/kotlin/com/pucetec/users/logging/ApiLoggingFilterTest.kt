@@ -16,7 +16,6 @@ import org.springframework.security.oauth2.jwt.Jwt
 import java.time.Instant
 
 class ApiLoggingFilterTest {
-
     private val filter = ApiLoggingFilter()
 
     @AfterEach
@@ -52,7 +51,7 @@ class ApiLoggingFilterTest {
 
         assertEquals(listOf("sub-123"), seen)
         assertTrue(request.getAttribute(ApiLoggingFilter.TRACED_ATTRIBUTE) as Boolean)
-        // El MDC se limpia al salir para no contaminar el siguiente request del hilo.
+
         assertNull(MDC.get(MDC_SUB))
     }
 

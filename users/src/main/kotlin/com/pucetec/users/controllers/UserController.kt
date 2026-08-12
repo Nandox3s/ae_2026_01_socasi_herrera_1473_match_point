@@ -16,23 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * El controlador no tiene logica: solo saca la identidad del token ya validado y delega
- * en el servicio. Las rutas ya nacen bajo `/users`, que es lo que enruta nginx.
- */
 @RestController
 @RequestMapping("/users")
 class UserController(
     private val userService: UserService
 ) {
-
-    // ============================================================
-    // Endpoints "del propio usuario": el cognitoId sale del token,
-    // NO del cliente. Esto demuestra la razon de ser del micro.
-    // @AuthenticationPrincipal Jwt jwt -> Spring ya valido el token
-    // y nos entrega sus claims. jwt.subject es el "sub" (el cognitoId).
-    // ============================================================
-
     @PostMapping("/me")
     @ResponseStatus(HttpStatus.CREATED)
     fun createMyProfile(
@@ -51,10 +39,6 @@ class UserController(
         @RequestBody request: UserRequest
     ): UserResponse = userService.updateUser(jwt.subject, jwt.username(), request)
 
-    // ============================================================
-    // Endpoints administrativos: solo para el rol MANAGER.
-    // ============================================================
-
     @GetMapping
     fun getAllUsers(): List<UserResponse> = userService.getAllUsers()
 
@@ -65,8 +49,6 @@ class UserController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteUser(@PathVariable id: Long) = userService.deleteUser(id)
 
-    // Consulta directa por cognitoId: la usa matchpoint cuando necesita el perfil de
-    // alguien distinto al portador del token.
     @GetMapping("/cognito/{cognitoId}")
     fun getUserByCognitoId(@PathVariable cognitoId: String): UserResponse =
         userService.getUserByCognitoId(cognitoId)

@@ -27,7 +27,6 @@ class CourtService(
     private val courtMapper: CourtMapper,
     private val auditService: AuditService
 ) {
-
     private val logger = LoggerFactory.getLogger(CourtService::class.java)
 
     fun createCourt(request: CreateCourtRequest, managerUser: String): CourtResponse {

@@ -16,7 +16,6 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "reservations")
 class Reservation(
-
     @ManyToOne
     @JoinColumn(name = "court_id")
     val court: Court,
@@ -24,8 +23,6 @@ class Reservation(
     @Column(name = "owner_user")
     val ownerUser: String,
 
-    // Copia del nombre que devolvio el microservicio `users`. Es dato ajeno: llega por
-    // HTTP y se guarda aqui, nunca se consulta la base del otro servicio.
     @Column(name = "owner_name")
     val ownerName: String,
 
@@ -45,6 +42,5 @@ class Reservation(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
 ) {
-
     fun endsAt(): LocalDateTime = startsAt.plusMinutes(durationMinutes.toLong())
 }

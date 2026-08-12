@@ -56,7 +56,6 @@ class TournamentService(
     private val matchMapper: MatchMapper,
     private val auditService: AuditService
 ) {
-
     private val logger = LoggerFactory.getLogger(TournamentService::class.java)
 
     private val maxTeamsLimit = 32

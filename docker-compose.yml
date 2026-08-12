@@ -1,25 +1,6 @@
 name: matchpoint
 
-# ---------------------------------------------------------------------------------
-#  Entrega final - Arquitectura Empresarial (PUCE, NRC 1473)
-#
-#  Reglas que cumple este archivo:
-#   1. SOLO nginx publica puerto. Microservicios y bases usan expose:.
-#   2. Puerto de host propio (9090 por defecto, configurable con GATEWAY_PORT).
-#   3. Los servicios se hablan por el DNS interno de Compose (users, matchpoint...).
-#   4. Healthcheck en cada base + depends_on service_healthy hacia la base PROPIA.
-#   5. Entre microservicios, service_started (una caida del vecino no impide arrancar).
-#   6. Volumen nombrado por base.
-#   7. La config de nginx se monta como volumen de solo lectura.
-#   8. Cognito por variables de entorno; ambos micros resuelven el MISMO issuer.
-#   9. PostgreSQL 16 con version fija en las dos bases.
-# ---------------------------------------------------------------------------------
-
 services:
-
-  # =================================================================================
-  #  API Gateway / reverse proxy: el UNICO punto de entrada expuesto.
-  # =================================================================================
   nginx:
     image: nginx:1.27-alpine
     container_name: matchpoint-nginx
@@ -36,8 +17,6 @@ services:
       pgadmin:
         condition: service_started
     healthcheck:
-      # 127.0.0.1 y no localhost: el wget de busybox intenta IPv6 primero y nginx
-      # solo escucha en IPv4.
       test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/health"]
       interval: 10s
       timeout: 5s
@@ -47,21 +26,18 @@ services:
     networks:
       - backbone
 
-  # =================================================================================
-  #  Microservicio de usuarios + SU base de datos.
-  # =================================================================================
   users:
+    image: ${USERS_IMAGE:-ghcr.io/nandox3s/ae_2026_01_socasi_herrera_1473_match_point/users:latest}
     build: ./users
     container_name: matchpoint-users
     expose:
       - "8686"
     environment:
       SERVER_PORT: "8686"
-      # Cadena de conexion que apunta SOLO a su propia base.
+      JAVA_TOOL_OPTIONS: ${JVM_OPTS:--Xmx192m -XX:MaxMetaspaceSize=128m -Xss512k}
       DB_URL: jdbc:postgresql://users-db:5432/${USERS_DB_NAME:-users_db}
       DB_USERNAME: ${USERS_DB_USER:-users_app}
       DB_PASSWORD: ${USERS_DB_PASSWORD:?falta USERS_DB_PASSWORD en el .env}
-      # Mismo issuer que matchpoint. Si no coincide, el token que uno acepta el otro lo rechaza.
       COGNITO_REGION: ${COGNITO_REGION:-us-east-1}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:?falta COGNITO_USER_POOL_ID en el .env}
       COGNITO_ISSUER_URI: https://cognito-idp.${COGNITO_REGION:-us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
@@ -87,7 +63,6 @@ services:
       POSTGRES_DB: ${USERS_DB_NAME:-users_db}
       POSTGRES_USER: ${USERS_DB_USER:-users_app}
       POSTGRES_PASSWORD: ${USERS_DB_PASSWORD:?falta USERS_DB_PASSWORD en el .env}
-    # Logging del MOTOR (Criterio 2, punto e1): toda sentencia queda registrada en stdout.
     command:
       - postgres
       - -c
@@ -114,10 +89,8 @@ services:
     networks:
       - backbone
 
-  # =================================================================================
-  #  Microservicio del proyecto (reservas + torneos) + SU base de datos.
-  # =================================================================================
   matchpoint:
+    image: ${MATCHPOINT_IMAGE:-ghcr.io/nandox3s/ae_2026_01_socasi_herrera_1473_match_point/matchpoint:latest}
     build: ./matchpoint
     container_name: matchpoint-app
     expose:
@@ -125,20 +98,17 @@ services:
     environment:
       SERVER_PORT: "8787"
       SERVER_CONTEXT_PATH: /matchpoint
-      # Cadena de conexion que apunta SOLO a su propia base.
+      JAVA_TOOL_OPTIONS: ${JVM_OPTS:--Xmx192m -XX:MaxMetaspaceSize=128m -Xss512k}
       DB_URL: jdbc:postgresql://matchpoint-db:5432/${MATCHPOINT_DB_NAME:-matchpoint_db}
       DB_USERNAME: ${MATCHPOINT_DB_USER:-matchpoint_app}
       DB_PASSWORD: ${MATCHPOINT_DB_PASSWORD:?falta MATCHPOINT_DB_PASSWORD en el .env}
       COGNITO_REGION: ${COGNITO_REGION:-us-east-1}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:?falta COGNITO_USER_POOL_ID en el .env}
       COGNITO_ISSUER_URI: https://cognito-idp.${COGNITO_REGION:-us-east-1}.amazonaws.com/${COGNITO_USER_POOL_ID}
-      # Descubrimiento por nombre de servicio de Compose, nunca por localhost ni IP.
       USERS_SERVICE_URL: http://users:8686
     depends_on:
       matchpoint-db:
         condition: service_healthy
-      # Al vecino solo se le exige que haya ARRANCADO: si tarda, la llamada
-      # devuelve 503/502 y se recupera sola.
       users:
         condition: service_started
     healthcheck:
@@ -186,10 +156,6 @@ services:
     networks:
       - backbone
 
-  # =================================================================================
-  #  Explorador de base de datos (Criterio 3), con LAS DOS conexiones registradas.
-  #  Se llega por http://localhost:9090/pgadmin/ (a traves de nginx).
-  # =================================================================================
   pgadmin:
     image: dpage/pgadmin4:8.14
     container_name: matchpoint-pgadmin

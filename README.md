@@ -147,15 +147,20 @@ docker compose ps
 
 ### Solo nginx publica puerto
 
-`docker compose ps` muestra **un único** servicio con `PORTS` mapeado al host: `nginx`. Los
-microservicios y las dos bases usan `expose:` y solo son alcanzables dentro de la red interna.
-Verificación directa:
+`docker compose ps` muestra **un único** servicio con `PORTS` mapeado al host: `nginx`. Los dos
+microservicios, las dos bases y pgAdmin usan `expose:` y solo son alcanzables dentro de la red
+interna. Verificación directa:
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:9090/matchpoint/courts && curl -s --max-time 3 http://localhost:8787/matchpoint/courts; echo "exit=$?"
 ```
 
 La primera responde `200`; la segunda falla, porque el puerto interno no está publicado.
+
+A las bases tampoco se llega desde el host: se inspeccionan con **pgAdmin, que también entra por
+el gateway** (`http://localhost:9090/pgadmin/`) y ya trae las dos conexiones registradas. Entre
+contenedores se hablan por el DNS interno de Compose (`users-db:5432`, `matchpoint-db:5432`),
+como se ve en `DB_URL`.
 
 ---
 
@@ -167,6 +172,9 @@ La primera responde `200`; la segunda falla, porque el puerto interno no está p
 |---|---|---|---|---|
 | `users` | `users-db` | `users_db` | `users_app` | `users_data` |
 | `matchpoint` | `matchpoint-db` | `matchpoint_db` | `matchpoint_app` | `matchpoint_data` |
+
+El modelo entidad-relación de las dos bases, con cardinalidades y diagramas, está en
+[`docs/MODELO-ER.md`](docs/MODELO-ER.md) (los diagramas exportados, en [`docs/er/`](docs/er)).
 
 Credenciales, base y volumen **distintos** por servicio. La cadena de conexión de cada
 microservicio (`DB_URL` en el `docker-compose.yml`) apunta **solo** a la suya, no hay `JOIN`
@@ -223,8 +231,21 @@ usuarios en memoria.
 | Región | `us-east-1` (variable `COGNITO_REGION`) |
 | User Pool ID | `us-east-1_JDqEph0S3` (variable `COGNITO_USER_POOL_ID`) |
 | Issuer | `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}` |
-| App Client | flujo `USER_PASSWORD_AUTH` habilitado, **sin** client secret (variable `COGNITO_APP_CLIENT_ID`, solo la usa Postman) |
+| App Client | `matchpoint-client` — `1n48tn47edu17qg12cj1hsohfm` (variable `COGNITO_APP_CLIENT_ID`, **solo la usa Postman**) |
+| Flujo del App Client | inicio de sesión basado en opciones (`USER_AUTH`) **con client secret** |
 | Grupos | `MANAGER`, `PLAYER` |
+
+Se usa el App Client que **ya existía** en el User Pool; no se creó ninguno aparte para las
+pruebas. Como tiene client secret, toda llamada a Cognito va firmada con
+`SECRET_HASH = Base64(HMAC-SHA256(username + clientId, clientSecret))`, y como su flujo es
+`USER_AUTH`, el login son dos llamadas: `InitiateAuth` con `PREFERRED_CHALLENGE: PASSWORD`
+devuelve el reto y una `Session`, y `RespondToAuthChallenge` la responde con la clave. Las dos
+las hace la carpeta `0` de la colección de Postman.
+
+**El client secret no vive en el repositorio.** No está en `.env` ni en el código: el backend
+no pide tokens, solo los valida contra el JWKS. El secreto se copia a mano en el environment
+de Postman (`cognitoClientSecret`, de tipo *secret*) desde
+*Cognito → Clientes de aplicación → matchpoint-client → Secretos del cliente*.
 
 **Los dos microservicios arman el issuer con las mismas dos variables de entorno**, así que
 resuelven exactamente el mismo valor: un token que uno acepta, el otro también. Los valores
@@ -621,16 +642,16 @@ permite dejar fuera.
 - [`postman/matchpoint.postman_collection.json`](postman/matchpoint.postman_collection.json)
 - [`postman/matchpoint.postman_environment.json`](postman/matchpoint.postman_environment.json)
 
-Importa las dos y selecciona el environment. Rellena `cognitoClientId`, `managerPassword` y
-`playerPassword` (no se versiona ningún valor real). Después basta el **Collection Runner** de
-arriba a abajo.
+Importa las dos y selecciona el environment. Rellena `cognitoClientSecret`, `managerPassword` y
+`playerPassword` (no se versiona ningún valor real; el `cognitoClientId` ya viene puesto,
+porque no es secreto). Después basta el **Collection Runner** de arriba a abajo.
 
 La colección **apunta a nginx** (`{{baseUrl}}` = `http://localhost:9090`), nunca a los puertos
 internos. Está organizada en carpetas:
 
 | Carpeta | Qué cubre |
 |---|---|
-| `0. Cognito` | Login `USER_PASSWORD_AUTH` de los dos roles; guarda los tokens solo, con un script de test |
+| `0. Cognito` | Login `USER_AUTH` (dos pasos, firmado con `SECRET_HASH`) de los dos roles; guarda los tokens solo, con un script de test |
 | `1. users` | Perfiles: alta, consulta, actualización, listado (MANAGER), `403` y `401` |
 | `2. canchas` | Alta, filtros, detalle, actualización, `400`, `401`, `403` por rol y `403` por propiedad |
 | `3. reservas` | Alta (con la llamada a `users`), solapamiento `409`, cancha inactiva `409`, `403`, cancelación |
@@ -645,10 +666,15 @@ Cada request tiene aserciones `pm.test`, y los ids (`courtId`, `tournamentId`,
 
 ## 12. Guion de la demo
 
-1. `docker compose ps` — todo `healthy`, un solo servicio con puerto.
+Guion completo, paso a paso y con los comandos exactos: [`docs/DEMO.md`](docs/DEMO.md).
+En resumen:
+
+1. `docker compose ps` — todo `healthy`, la API con un solo punto de entrada.
 2. Diagrama de arquitectura y decisiones (secciones 1, 3 y 5 de este README).
 3. Postman: carpeta `0` (token de Cognito) y luego el flujo completo de negocio.
-4. pgAdmin: la fila recién creada, en la base del microservicio que corresponde.
+4. Base de datos: el modelo entidad-relación ([`docs/MODELO-ER.md`](docs/MODELO-ER.md)) y la
+   fila recién creada en pgAdmin (`http://localhost:9090/pgadmin/`), en la base del
+   microservicio que corresponde.
 5. `docker compose logs -f` al lado: se ven la línea de entrada, el evento de negocio, el SQL
    y la línea de salida con el código HTTP. Repetir con un `401` y con un `403`.
 6. `./gradlew test` y la cobertura del IDE en los dos servicios.

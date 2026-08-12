@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component
 
 @Component
 class ReservationMapper {
-
     fun toEntity(
         request: CreateReservationRequest,
         court: Court,

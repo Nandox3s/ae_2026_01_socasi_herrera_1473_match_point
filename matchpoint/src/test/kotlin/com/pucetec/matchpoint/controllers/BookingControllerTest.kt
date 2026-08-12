@@ -40,7 +40,6 @@ import java.time.LocalDateTime
 @WebMvcTest(CourtController::class, ReservationController::class)
 @Import(SecurityConfig::class, GlobalExceptionHandler::class)
 class BookingControllerTest {
-
     @Autowired
     lateinit var mockMvc: MockMvc
 
@@ -76,8 +75,6 @@ class BookingControllerTest {
         durationMinutes = 60, status = ReservationStatus.CONFIRMED,
         createdAt = LocalDateTime.of(2026, 7, 8, 12, 0)
     )
-
-    // ------------------------------------------------------------------------ courts
 
     @Test
     fun `GET courts is public`() {
@@ -143,8 +140,6 @@ class BookingControllerTest {
         ).andExpect(status().isForbidden)
     }
 
-    // ------------------------------------------------------------------ reservations
-
     @Test
     fun `POST reservations with MANAGER returns 403`() {
         mockMvc.perform(
@@ -190,8 +185,6 @@ class BookingControllerTest {
 
         verify(reservationService).cancel(1L, "player_fernando")
     }
-
-    // ---------------------------------------------- traduccion de errores a HTTP ----
 
     @Test
     fun `a missing court is answered with 404`() {

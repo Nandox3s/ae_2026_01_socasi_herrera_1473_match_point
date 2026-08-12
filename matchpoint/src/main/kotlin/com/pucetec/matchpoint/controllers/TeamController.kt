@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/tournaments/{tournamentId}/teams")
 class TeamController(private val tournamentService: TournamentService) {
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun register(

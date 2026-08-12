@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class MatchController(private val tournamentService: TournamentService) {
-
     @GetMapping("/tournaments/{tournamentId}/matches")
     fun list(@PathVariable tournamentId: Long): List<MatchResponse> =
         tournamentService.listMatches(tournamentId)

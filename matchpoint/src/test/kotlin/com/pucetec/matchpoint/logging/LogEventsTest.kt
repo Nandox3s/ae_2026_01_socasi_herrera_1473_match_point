@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class LogEventsTest {
-
     @Test
     fun `a line without extra fields only carries event and msg`() {
         assertEquals(

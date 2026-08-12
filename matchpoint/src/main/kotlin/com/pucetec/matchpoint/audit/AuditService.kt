@@ -9,16 +9,10 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 
-/**
- * Deja constancia de cada INSERT/UPDATE/DELETE sobre las entidades principales, tanto en
- * la tabla `audit_log` como en el log de la aplicacion. El "quien" sale siempre del token
- * de Cognito, nunca del cuerpo de la peticion.
- */
 @Service
 class AuditService(
     private val auditLogRepository: AuditLogRepository
 ) {
-
     private val logger = LoggerFactory.getLogger(AuditService::class.java)
 
     fun record(

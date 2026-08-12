@@ -14,7 +14,7 @@ data class ReservationResponse(
     val courtId: Long,
     val courtName: String,
     val ownerUser: String,
-    // Viene del microservicio `users`, no de la base de matchpoint.
+
     val ownerName: String,
     val startsAt: LocalDateTime,
     val durationMinutes: Int,

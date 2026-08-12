@@ -7,7 +7,6 @@ data class MeResponse(
     val sub: String,
     val email: String?,
     val groups: List<String>,
-    // Perfil traido en vivo del microservicio `users` con el token propagado.
-    // Es null si el usuario aun no lo registro o si `users` no responde.
+
     val profile: UserProfile?
 )

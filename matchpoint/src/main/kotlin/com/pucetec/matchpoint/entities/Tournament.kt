@@ -17,7 +17,6 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "tournaments")
 class Tournament(
-
     val name: String,
 
     @Enumerated(EnumType.STRING)

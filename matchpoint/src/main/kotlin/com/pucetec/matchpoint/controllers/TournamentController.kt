@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/tournaments")
 class TournamentController(private val tournamentService: TournamentService) {
-
     @GetMapping
     fun list(): List<TournamentResponse> = tournamentService.listTournaments()
 

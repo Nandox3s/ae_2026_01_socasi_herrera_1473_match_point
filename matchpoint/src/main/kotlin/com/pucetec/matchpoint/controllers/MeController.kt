@@ -7,14 +7,8 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
-/**
- * Devuelve la identidad que trae el token y, ademas, el perfil que responde el
- * microservicio `users`. Es la forma mas corta de demostrar en vivo que el token
- * atraviesa nginx y sigue viajando de un microservicio al otro.
- */
 @RestController
 class MeController(private val usersClient: UsersClient) {
-
     @GetMapping("/me")
     fun me(@AuthenticationPrincipal jwt: Jwt): MeResponse =
         MeResponse(

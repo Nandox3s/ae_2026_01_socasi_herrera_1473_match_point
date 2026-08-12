@@ -27,13 +27,9 @@ class ReservationService(
     private val usersClient: UsersClient,
     private val auditService: AuditService
 ) {
-
     private val logger = LoggerFactory.getLogger(ReservationService::class.java)
 
     fun createReservation(request: CreateReservationRequest, playerUser: String): ReservationResponse {
-        // Regla de negocio que cruza los dos microservicios: no se reserva sin perfil
-        // registrado. El dato ajeno llega por HTTP con el token propagado, nunca de la
-        // base de datos del otro servicio.
         val profile = usersClient.fetchCurrentProfile()
 
         val court = courtRepository.findById(request.courtId)

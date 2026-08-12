@@ -14,7 +14,6 @@ import java.time.LocalDateTime
 @Entity
 @Table(name = "teams")
 class Team(
-
     @ManyToOne
     @JoinColumn(name = "tournament_id")
     val tournament: Tournament,

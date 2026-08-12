@@ -21,12 +21,7 @@ import org.springframework.test.web.client.response.MockRestResponseCreators.wit
 import org.springframework.web.client.RestClient
 import java.time.Instant
 
-/**
- * Estos tests demuestran lo que exige el Criterio 1: matchpoint pide el dato ajeno por
- * HTTP al microservicio `users`, propagando el MISMO token del usuario.
- */
 class UsersClientTest {
-
     private lateinit var server: MockRestServiceServer
     private lateinit var client: UsersClient
 

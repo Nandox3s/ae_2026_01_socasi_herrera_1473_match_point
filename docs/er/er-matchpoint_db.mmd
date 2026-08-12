@@ -1,0 +1,91 @@
+erDiagram
+    courts {
+        bigint       id             PK "identity"
+        varchar_80   name
+        varchar_40   sector
+        boolean      has_parking
+        varchar_30   sport_type        "BASKET"
+        varchar_40   floor_type
+        decimal_8_2  price_per_hour    "> 0"
+        boolean      active
+        varchar_60   manager_user      "dueño: claim username del JWT"
+        timestamp    created_at
+    }
+
+    reservations {
+        bigint      id               PK "identity"
+        bigint      court_id         FK "-> courts.id"
+        varchar_60  owner_user          "dueño: claim username del JWT"
+        varchar_80  owner_name          "COPIA de lo que devolvio el micro users"
+        timestamp   starts_at
+        integer     duration_minutes    "> 0"
+        varchar_20  status              "CONFIRMED | CANCELLED"
+        timestamp   created_at
+    }
+
+    tournaments {
+        bigint      id               PK "identity"
+        varchar_80  name
+        varchar_30  sport_type          "BASKET"
+        integer     max_teams           "2 | 4 | 8 | 16 | 32"
+        varchar_150 prize               "opcional"
+        varchar_20  status              "REGISTRATION | IN_PROGRESS | FINISHED"
+        varchar_60  manager_user        "dueño: claim username del JWT"
+        bigint      court_id         FK "-> courts.id (sede, opcional)"
+        bigint      champion_team_id FK "-> teams.id (opcional)"
+        timestamp   created_at
+    }
+
+    teams {
+        bigint       id                 PK "identity"
+        bigint       tournament_id      FK "-> tournaments.id"
+        varchar_60   registered_by_user    "PLAYER que inscribe"
+        varchar_80   name                  "UNIQUE por torneo"
+        varchar_80   contact_name
+        varchar_120  contact_email
+        varchar_30   contact_phone
+        boolean      eliminated
+        integer      matches_played
+        integer      matches_won
+        integer      matches_lost
+        integer      points_for
+        integer      points_against
+        integer      current_round
+        timestamp    created_at
+    }
+
+    matches {
+        bigint      id                PK "identity"
+        bigint      tournament_id     FK "-> tournaments.id"
+        integer     round_number         "UNIQUE con position_in_round"
+        integer     position_in_round
+        bigint      home_team_id      FK "-> teams.id"
+        bigint      away_team_id      FK "-> teams.id"
+        integer     home_score
+        integer     away_score
+        bigint      winner_team_id    FK "-> teams.id (home o away)"
+        varchar_20  status               "PENDING | READY | PLAYED"
+        timestamp   scheduled_at         "opcional"
+        timestamp   created_at
+    }
+
+    audit_log {
+        bigint       id          PK "identity"
+        varchar_40   entity_name    "courts | reservations | tournaments | teams | matches"
+        bigint       entity_id
+        varchar_10   action         "INSERT | UPDATE | DELETE"
+        varchar_80   user_sub       "quien"
+        varchar_60   user_name      "quien"
+        varchar_2000 old_values
+        varchar_2000 new_values
+        timestamp    created_at     "cuando"
+    }
+
+    courts      ||--o{ reservations : "recibe"
+    courts      |o--o{ tournaments  : "es sede de"
+    tournaments ||--o{ teams        : "inscribe"
+    tournaments ||--o{ matches      : "programa"
+    teams       |o--o{ matches      : "juega de local"
+    teams       |o--o{ matches      : "juega de visitante"
+    teams       |o--o{ matches      : "gana"
+    teams       |o--o| tournaments  : "es campeon de"

@@ -1,0 +1,24 @@
+erDiagram
+    users {
+        bigint      id          PK "identity"
+        varchar_80  cognito_id  UK "claim sub del JWT"
+        varchar_60  username       "claim username del JWT"
+        varchar_80  name
+        varchar_120 email          "opcional"
+        varchar_30  phone          "opcional"
+        timestamp   created_at
+    }
+
+    audit_log {
+        bigint       id          PK "identity"
+        varchar_40   entity_name    "siempre 'users'"
+        bigint       entity_id      "id de la fila auditada"
+        varchar_10   action         "INSERT | UPDATE | DELETE"
+        varchar_80   user_sub       "quien: sub del JWT"
+        varchar_60   user_name      "quien: username del JWT"
+        varchar_2000 old_values     "valores anteriores, enmascarados"
+        varchar_2000 new_values     "valores nuevos, enmascarados"
+        timestamp    created_at     "cuando"
+    }
+
+    users ||..o{ audit_log : "deja rastro en"

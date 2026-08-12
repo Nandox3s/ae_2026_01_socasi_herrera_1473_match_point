@@ -1,0 +1,17 @@
+flowchart LR
+    subgraph COG["AWS Cognito · User Pool"]
+        JWT["JWT<br/>sub · username · cognito:groups"]
+    end
+
+    subgraph U["microservicio users"]
+        UDB[("users_db<br/>users · audit_log")]
+    end
+
+    subgraph M["microservicio matchpoint"]
+        MDB[("matchpoint_db<br/>courts · reservations<br/>tournaments · teams · matches · audit_log")]
+    end
+
+    JWT -->|"claim sub llena users.cognito_id"| UDB
+    JWT -->|"claim username llena manager_user, owner_user, registered_by_user"| MDB
+    M -->|"GET /users/me con el mismo token<br/>HTTP, nunca SQL"| U
+    U -.->|"el nombre del perfil se copia en reservations.owner_name"| MDB

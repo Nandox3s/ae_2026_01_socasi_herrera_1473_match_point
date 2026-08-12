@@ -27,12 +27,14 @@ services:
       - backbone
 
   users:
+    image: ${USERS_IMAGE:-ghcr.io/nandox3s/ae_2026_01_socasi_herrera_1473_match_point/users:latest}
     build: ./users
     container_name: matchpoint-users
     expose:
       - "8686"
     environment:
       SERVER_PORT: "8686"
+      JAVA_TOOL_OPTIONS: ${JVM_OPTS:--Xmx192m -XX:MaxMetaspaceSize=128m -Xss512k}
       DB_URL: jdbc:postgresql://users-db:5432/${USERS_DB_NAME:-users_db}
       DB_USERNAME: ${USERS_DB_USER:-users_app}
       DB_PASSWORD: ${USERS_DB_PASSWORD:?falta USERS_DB_PASSWORD en el .env}
@@ -88,6 +90,7 @@ services:
       - backbone
 
   matchpoint:
+    image: ${MATCHPOINT_IMAGE:-ghcr.io/nandox3s/ae_2026_01_socasi_herrera_1473_match_point/matchpoint:latest}
     build: ./matchpoint
     container_name: matchpoint-app
     expose:
@@ -95,6 +98,7 @@ services:
     environment:
       SERVER_PORT: "8787"
       SERVER_CONTEXT_PATH: /matchpoint
+      JAVA_TOOL_OPTIONS: ${JVM_OPTS:--Xmx192m -XX:MaxMetaspaceSize=128m -Xss512k}
       DB_URL: jdbc:postgresql://matchpoint-db:5432/${MATCHPOINT_DB_NAME:-matchpoint_db}
       DB_USERNAME: ${MATCHPOINT_DB_USER:-matchpoint_app}
       DB_PASSWORD: ${MATCHPOINT_DB_PASSWORD:?falta MATCHPOINT_DB_PASSWORD en el .env}
